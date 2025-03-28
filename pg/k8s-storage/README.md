@@ -12,5 +12,5 @@
 
 ## Steps for running fio tests
 
-1. Build image using Dockerfile present at fio/ directory
-2. Run job `fio.yaml` 
+1. Build image using Dockerfile present at fio/ directory. 
+2. Add the image details in `fio/fio.yaml`. Run job `fio/fio.yaml` 
