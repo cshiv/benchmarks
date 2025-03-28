@@ -1,0 +1,85 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fio-pvc
+spec:
+  volumeMode: Filesystem
+  #volumeMode: Block
+  #storageClassName: longhorn  # replace with your storage class
+  #storageClassName: ebs-io2-maxiops
+  #storageClassName: openebs-nvme
+  #storageClassName: rook-ceph-block
+  storageClassName: portworx
+  #storageClassName: lightbits
+
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1024Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fio
+spec:
+  template:
+    metadata:
+      labels:
+        app: fio-test
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - pg
+            topologyKey: "kubernetes.io/hostname"    
+      containers:
+      - name: fio-run
+        resources:
+          limits:
+            memory: "10Gi"
+            cpu: "12"      
+        securityContext:
+          privileged: true  # Give the container privileged access      
+        image: <replace-from-docker-file>
+        imagePullPolicy: Always
+
+        env:
+#        - name: CUSTOM_FIO_CONFIG
+#          value: "test.cfg" # for custom configs, this needs to be mounted at /opt/fiotest
+        - name: FIO_STORAGE_DIR
+          value: "/data" # run all tests
+        - name: FIO_CONFIG_FILES
+          value: "fio_odirect" # Space seperated "fio_odirect fio_fsync"
+        volumeMounts:
+        - name: vol
+          mountPath: /data
+        - name: host-proc
+          mountPath: /host/proc  # Mount the host's /proc
+          readOnly: false
+
+        #- name: custom-config
+        #  mountPath: /fio
+        #volumeDevices:
+        #- name: vol
+        #  devicePath: /volume/test
+      restartPolicy: Never
+      volumes:
+      - name: vol
+        persistentVolumeClaim:
+          claimName: fio-pvc
+      - name: host-proc
+        hostPath:
+          path: /proc
+      hostNetwork: true
+      hostPID: true
+
+      #- name: custom-config
+      #  configMap:
+      #    name: custom-config
+  backoffLimit: 0

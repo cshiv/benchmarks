@@ -1,0 +1,14 @@
+FROM ubuntu:24.04
+
+ENV FIO_DIR=/opt/fio_test/
+
+RUN echo "tzdata tzdata/Areas select Europe" |  debconf-set-selections
+RUN echo "tzdata tzdata/Zones/Europe select Rome" |  debconf-set-selections
+RUN apt update && apt install -y fio jq
+RUN mkdir -p ${FIO_DIR}
+COPY fio-run.sh fio_odirect.cfg fio_fsync.cfg dropcache.sh ${FIO_DIR}
+
+WORKDIR ${FIO_DIR}
+#ENTRYPOINT ["bash", "${FIO_DIR}/fio-run.sh","${FIO_STORAGE_DIR}"]
+ENTRYPOINT ["/bin/bash","-c", "${FIO_DIR}/fio-run.sh"]
+

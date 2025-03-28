@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pg-client
+  labels:
+    app: pg-client
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/component
+            operator: In
+            values:
+            - pg
+        topologyKey: "kubernetes.io/hostname"
+  containers:
+  - name: pgbench
+    env:
+    - name: PGPASSWORD
+      value: "tpcc"
+    args:
+    - -c
+    - "tail -f /dev/null"
+    command:
+    - /bin/sh
+
+    image: perconalab/percona-distribution-postgresql:16
+    resources:
+      limits:
+        memory: "10Gi"
+        cpu: "10"
